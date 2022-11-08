@@ -1,6 +1,11 @@
 use rltk::{Rltk, BTermBuilder, GameState, embedded_resource};
 use bracket_lib::prelude::*;
 use std::fmt::Display;
+use specs::prelude::*;
+
+mod components;
+use crate::components::*;  
+
 
 embedded_resource!(WIDE_FONT, "resources/terminal_10x16.png");
 embedded_resource!(VGA_FONT, "resources/vga8x16.png");
@@ -13,7 +18,9 @@ pub enum RunState{
 }
 
 
-struct State { display: RunState}
+struct  State { 
+    ecs: World,
+    display: RunState}
 
 impl GameState for State {
     fn tick(&mut self, ctx : &mut Rltk) {
@@ -29,10 +36,13 @@ impl GameState for State {
                     VirtualKeyCode::Return => self.display = RunState::StartGame,
                     _ => {}
                     }
-                }
+                }  
             }
             RunState::StartGame => {
+                let mut r = self.ecs.get_mut::<RandomNumberGenerator>().unwrap().range(10,100);
                 self.center_at_row(ctx, 12, "Game has begun");
+                self.center_at_row(ctx, 15, r);
+                ctx.print(0, 0, format!("{}", ctx.fps));
 
             }
         }
@@ -57,8 +67,16 @@ fn main() -> BError {
         .with_title("Roguelike Tutorial")
         .with_font("terminal_10x16.png", 10, 16)
         .with_tile_dimensions(10, 16)
+        .with_fps_cap(10.0)
         .build()?;
-    let gs = State{ display: RunState::WelcomeScreen};
+
+    let mut gs = State{ 
+        ecs: World::new(),
+        display: RunState::WelcomeScreen};
+
+    register_components(&mut gs.ecs);
+    gs.ecs.insert(RandomNumberGenerator::new());  
+
     rltk::main_loop(context, gs)
-}
- 
+} 
+  
