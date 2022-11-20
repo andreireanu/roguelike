@@ -3,14 +3,15 @@ use bracket_lib::prelude::*;
 use std::fmt::Display;
 use specs::prelude::*;
 
+mod map;
 mod components;
 use crate::components::*;  
-
+use crate::map::*;
 
 embedded_resource!(WIDE_FONT, "resources/terminal_10x16.png");
 embedded_resource!(VGA_FONT, "resources/vga8x16.png");
 
-const WIDTH: i32 = 40;
+const WIDTH:  i32 = 40;
 const HEIGHT: i32 = 25;
 pub enum RunState{
     WelcomeScreen,
@@ -39,11 +40,9 @@ impl GameState for State {
                 }  
             }
             RunState::StartGame => {
-                let mut r = self.ecs.get_mut::<RandomNumberGenerator>().unwrap().range(10,100);
-                self.center_at_row(ctx, 12, "Game has begun");
-                self.center_at_row(ctx, 15, r);
                 ctx.print(0, 0, format!("{}", ctx.fps));
-
+                let map = self.ecs.fetch::<Map>();
+                map.draw(ctx);
             }
         }
     }
@@ -57,7 +56,7 @@ impl State {
     } 
 }
 
-
+ 
 fn main() -> BError { 
      link_resource!(WIDE_FONT, "resources/terminal_10x16.png");
      link_resource!(VGA_FONT, "resources/vga8x16.png");
@@ -67,7 +66,7 @@ fn main() -> BError {
         .with_title("Roguelike Tutorial")
         .with_font("terminal_10x16.png", 10, 16)
         .with_tile_dimensions(10, 16)
-        .with_fps_cap(10.0)
+        .with_fps_cap(10.0)      
         .build()?;
 
     let mut gs = State{ 
@@ -75,7 +74,9 @@ fn main() -> BError {
         display: RunState::WelcomeScreen};
 
     register_components(&mut gs.ecs);
-    gs.ecs.insert(RandomNumberGenerator::new());  
+    gs.ecs.insert(RandomNumberGenerator::new()); 
+    let map = Map::generate(&mut gs.ecs, WIDTH, HEIGHT);
+    gs.ecs.insert(map); 
 
     rltk::main_loop(context, gs)
 } 
