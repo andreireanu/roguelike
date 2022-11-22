@@ -35,7 +35,7 @@ impl Map {
         for room in &self.rooms {
             for col in room.x1..room.x2 {
                 for row in room.y1..room.y2 {
-                    ctx.print(col, row, '#');
+                    ctx.print(room.x1, row, &format!("{}", ".".repeat((room.x2 - room.x1) as usize)));
                 }
             }
         }
